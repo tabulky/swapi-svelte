@@ -1,3 +1,37 @@
+# Star Wars Planet Explorer (SvelteKit)
+
+## Purpose & Design choices
+
+Purpose of this project is to show skills with SvelteKit and TypeScript.
+
+### Globa State Management
+
+## API Notes
+
+There are at least two choices:
+
+- ✅ [swapi.info](https://swapi.info/) (in use)
+  - ❌ Missing pagination & search
+  - ✅ JSON Schema
+- ❌ [swapi.dev](https://swapi.dev/)
+  - ✅ Have pagination & search
+  - ❌ JSON Schema not working, see
+    [#37](https://github.com/Juriy/swapi/issues/37),
+    [⎇66](https://github.com/Juriy/swapi/pull/66)
+
+## Schema for SW API
+
+You can run `pnpm gen:swapi`, see more in [src/lib/swapi-schema/README](./src/lib/swapi-schema/README.md)
+
+## Developer guidelines
+
+- Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#specification) convention for commit messages
+- Do not introduce new dependencies
+
+---
+
+---
+
 # sv
 
 Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
