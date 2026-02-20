@@ -21,20 +21,30 @@
     </tr>
   </thead>
   <tbody>
-    {#each await data.planets as planet (planet.url)}
+    {#await data.planets}
       <tr>
-        <td>{planet.name}</td>
-        <td>{planet.climate}</td>
-        <td>{planet.terrain}</td>
-        <td>{planet.gravity}</td>
-        <td>{planet.surface_water}</td>
-        <td>{planet.rotation_period}</td>
-        <td>{planet.orbital_period}</td>
-        <td>{planet.diameter}</td>
-        <td>{planet.population}</td>
-        <td>{planet.residents.length}</td>
-        <td>{planet.films.length}</td>
+        <td colspan="11">Loading...</td>
       </tr>
-    {/each}
+    {:then planets}
+      {#each planets as planet (planet.url)}
+        <tr>
+          <td>{planet.name}</td>
+          <td>{planet.climate}</td>
+          <td>{planet.terrain}</td>
+          <td>{planet.gravity}</td>
+          <td>{planet.surface_water}</td>
+          <td>{planet.rotation_period}</td>
+          <td>{planet.orbital_period}</td>
+          <td>{planet.diameter}</td>
+          <td>{planet.population}</td>
+          <td>{planet.residents.length}</td>
+          <td>{planet.films.length}</td>
+        </tr>
+      {/each}
+    {:catch error}
+      <tr>
+        <td colspan="11">Error loading planets: {error.message}</td>
+      </tr>
+    {/await}
   </tbody>
 </table>
