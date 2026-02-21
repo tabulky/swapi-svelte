@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { invalidate } from "$app/navigation";
   import type { Planet } from "$lib/swapi-schema/planetSchema";
+  import { getPlanets } from "./data.remote";
 
-  let { data } = $props();
+  const planets = $derived(await getPlanets());
 
   type SortKey = keyof Planet;
   type SortDirection = "asc" | "desc";
@@ -220,7 +220,7 @@
 <h1>Planets</h1>
 
 <div class="toolbar">
-  <button onclick={() => invalidate("data:planets")}>Refresh</button>
+  <button onclick={() => getPlanets().refresh()}>Refresh</button>
   <button onclick={() => (showColumnSettings = !showColumnSettings)}>
     {showColumnSettings ? "Hide" : "Show"} Column Settings
   </button>
@@ -251,31 +251,27 @@
   </div>
 {/if}
 
-<table>
-  <thead>
-    <tr>
-      {#each visibleColumns as col, i (col.key)}
-        <th
-          class:sortable={sortableColumns.has(col.key)}
-          draggable="true"
-          ondragstart={() => onDragStart(i, "header")}
-          ondragover={(e) => onDragOver(e, i)}
-          ondrop={(e) => onDropHeader(e, i)}
-          ondragend={onDragEnd}
-          class:drag-over={dragOverIndex === i && dragContext === "header"}
-          onclick={() => sortableColumns.has(col.key) && toggleSort(col.key)}
-        >
-          {col.label}{sortIndicator(col.key)}
-        </th>
-      {/each}
-    </tr>
-  </thead>
-  <tbody bind:this={tbodyEl}>
-    {#await data.planets}
+<svelte:boundary>
+  <table>
+    <thead>
       <tr>
-        <td colspan={visibleCount}>Loading...</td>
+        {#each visibleColumns as col, i (col.key)}
+          <th
+            class:sortable={sortableColumns.has(col.key)}
+            draggable="true"
+            ondragstart={() => onDragStart(i, "header")}
+            ondragover={(e) => onDragOver(e, i)}
+            ondrop={(e) => onDropHeader(e, i)}
+            ondragend={onDragEnd}
+            class:drag-over={dragOverIndex === i && dragContext === "header"}
+            onclick={() => sortableColumns.has(col.key) && toggleSort(col.key)}
+          >
+            {col.label}{sortIndicator(col.key)}
+          </th>
+        {/each}
       </tr>
-    {:then planets}
+    </thead>
+    <tbody bind:this={tbodyEl}>
       {#each sortPlanets(filterPlanets(planets)) as planet (planet.url)}
         <tr>
           {#each visibleColumns as col (col.key)}
@@ -283,13 +279,17 @@
           {/each}
         </tr>
       {/each}
-    {:catch error}
-      <tr>
-        <td colspan={visibleCount}>Error loading planets: {error.message}</td>
-      </tr>
-    {/await}
-  </tbody>
-</table>
+    </tbody>
+  </table>
+
+  {#snippet pending()}
+    <p>Loading planets...</p>
+  {/snippet}
+
+  {#snippet failed(error)}
+    <p>Error loading planets: {error instanceof Error ? error.message : error}</p>
+  {/snippet}
+</svelte:boundary>
 
 <style>
   .toolbar {
