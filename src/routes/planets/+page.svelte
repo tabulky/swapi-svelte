@@ -166,6 +166,55 @@
     if (key === "films") return planet.films.length;
     return String(planet[key]);
   }
+
+  // --- Highlight API ---
+
+  let tbodyEl = $state<HTMLTableSectionElement | null>(null);
+
+  function getTextNodes(node: Node): Text[] {
+    const texts: Text[] = [];
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    let current: Node | null;
+    while ((current = walker.nextNode())) {
+      texts.push(current as Text);
+    }
+    return texts;
+  }
+
+  $effect(() => {
+    if (!CSS.highlights) return;
+
+    const q = filterText.trim().toLowerCase();
+    if (!q || !tbodyEl) {
+      CSS.highlights.delete("filter-match");
+      return;
+    }
+
+    const ranges: Range[] = [];
+    for (const textNode of getTextNodes(tbodyEl)) {
+      const text = textNode.textContent?.toLowerCase() ?? "";
+      let start = 0;
+      while (start < text.length) {
+        const idx = text.indexOf(q, start);
+        if (idx === -1) break;
+        const range = new Range();
+        range.setStart(textNode, idx);
+        range.setEnd(textNode, idx + q.length);
+        ranges.push(range);
+        start = idx + 1;
+      }
+    }
+
+    if (ranges.length > 0) {
+      CSS.highlights.set("filter-match", new Highlight(...ranges));
+    } else {
+      CSS.highlights.delete("filter-match");
+    }
+
+    return () => {
+      CSS.highlights?.delete("filter-match");
+    };
+  });
 </script>
 
 <h1>Planets</h1>
@@ -221,7 +270,7 @@
       {/each}
     </tr>
   </thead>
-  <tbody>
+  <tbody bind:this={tbodyEl}>
     {#await data.planets}
       <tr>
         <td colspan={visibleCount}>Loading...</td>
@@ -327,5 +376,10 @@
     color: inherit;
     font-size: 0.9rem;
     min-width: 180px;
+  }
+
+  ::highlight(filter-match) {
+    background-color: #fbbf24;
+    color: #000;
   }
 </style>

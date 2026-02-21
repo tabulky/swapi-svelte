@@ -1,5 +1,7 @@
 // place files you want to import through the `$lib` alias in this folder.
 
+import type { Film } from "./swapi-schema/filmSchema";
+
 export const x: Film = {
   title: "A New Hope",
   episode_id: 4,
