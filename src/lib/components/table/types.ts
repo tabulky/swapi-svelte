@@ -1,3 +1,5 @@
+import type { Snippet } from "svelte";
+
 export interface ColumnConfig<T> {
   /** Property key on the row object */
   key: keyof T & string;
@@ -11,4 +13,6 @@ export interface ColumnConfig<T> {
   sortType?: "text" | "numeric";
   /** Optional render function — receives the cell value and the full row, returns display value */
   render?: (value: T[keyof T & string], row: T) => string | number;
+  /** Optional Snippet for custom HTML cell rendering — takes priority over `render` */
+  cell?: Snippet<[{ value: T[keyof T & string]; row: T }]>;
 }

@@ -1,30 +1,27 @@
 <script lang="ts" generics="T extends Record<string, unknown>">
+  import type { Snippet } from "svelte";
   import type { ColumnConfig } from "./types";
 
-  interface Props {
+  type Props = {
     data: T[];
     columns: ColumnConfig<T>[];
     rowKey: keyof T & string;
     filterPlaceholder?: string;
-  }
+  };
 
-  let {
-    data,
-    columns: columnConfig,
-    rowKey,
-    filterPlaceholder = "Filter…",
-  }: Props = $props();
+  let { data, columns: columnConfig, rowKey, filterPlaceholder = "…" }: Props = $props();
 
   // --- Internal column state (adds runtime `visible` tracking) ---
 
-  interface InternalColumn {
+  type InternalColumn = {
     key: keyof T & string;
     label: string;
     visible: boolean;
     sortable: boolean;
     sortType: "text" | "numeric";
     render?: (value: T[keyof T & string], row: T) => string | number;
-  }
+    cell?: Snippet<[{ value: T[keyof T & string]; row: T }]>;
+  };
 
   function toInternal(configs: ColumnConfig<T>[]): InternalColumn[] {
     return configs.map((c) => ({
@@ -34,6 +31,7 @@
       sortable: c.sortable ?? false,
       sortType: c.sortType ?? "text",
       render: c.render,
+      cell: c.cell,
     }));
   }
 
@@ -293,7 +291,13 @@
     {#each processedRows as row (row[rowKey])}
       <tr>
         {#each visibleColumns as col (col.key)}
-          <td>{cellValue(row, col.key)}</td>
+          <td>
+            {#if col.cell}
+              {@render col.cell({ value: row[col.key] as T[keyof T & string], row })}
+            {:else}
+              {cellValue(row, col.key)}
+            {/if}
+          </td>
         {/each}
       </tr>
     {/each}
