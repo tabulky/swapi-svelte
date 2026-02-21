@@ -8,7 +8,8 @@ const fetchPlanets = async (fetch: typeof globalThis.fetch): Promise<Planet[]> =
   return response.json() as Promise<Planet[]>;
 };
 
-export const load = async ({ fetch }) => {
+export const load = async ({ fetch, depends }) => {
+  depends("data:planets");
   return {
     planets: fetchPlanets(fetch),
   };

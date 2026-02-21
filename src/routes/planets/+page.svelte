@@ -1,8 +1,14 @@
 <script lang="ts">
+  import { invalidate } from "$app/navigation";
+
   let { data } = $props();
 </script>
 
 <h1>Planets</h1>
+
+<div>
+  <button onclick={() => invalidate("data:planets")}>Refresh</button>
+</div>
 
 <table>
   <thead>
