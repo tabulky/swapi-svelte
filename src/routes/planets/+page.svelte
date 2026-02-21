@@ -16,6 +16,7 @@
   let sortKey = $state<SortKey | null>(null);
   let sortDirection = $state<SortDirection>("asc");
   let showColumnSettings = $state(false);
+  let filterText = $state("");
 
   let columns = $state<Column[]>([
     { key: "name", label: "Name", visible: true },
@@ -145,6 +146,19 @@
     dragContext = null;
   }
 
+  // --- Filtering ---
+
+  function filterPlanets(planets: Planet[]): Planet[] {
+    const q = filterText.trim().toLowerCase();
+    if (!q) return planets;
+    return planets.filter((planet) =>
+      visibleColumns.some((col) => {
+        const val = String(cellValue(planet, col.key)).toLowerCase();
+        return val.includes(q);
+      }),
+    );
+  }
+
   // --- Cell value rendering ---
 
   function cellValue(planet: Planet, key: SortKey): string | number {
@@ -161,6 +175,7 @@
   <button onclick={() => (showColumnSettings = !showColumnSettings)}>
     {showColumnSettings ? "Hide" : "Show"} Column Settings
   </button>
+  <input type="text" class="filter-input" placeholder="Filter planets…" bind:value={filterText} />
 </div>
 
 {#if showColumnSettings}
@@ -212,7 +227,7 @@
         <td colspan={visibleCount}>Loading...</td>
       </tr>
     {:then planets}
-      {#each sortPlanets(planets) as planet (planet.url)}
+      {#each sortPlanets(filterPlanets(planets)) as planet (planet.url)}
         <tr>
           {#each visibleColumns as col (col.key)}
             <td>{cellValue(planet, col.key)}</td>
@@ -302,5 +317,15 @@
 
   th.drag-over {
     border-left: 2px solid #6cf;
+  }
+
+  .filter-input {
+    padding: 0.35rem 0.5rem;
+    border: 1px solid #555;
+    border-radius: 4px;
+    background: inherit;
+    color: inherit;
+    font-size: 0.9rem;
+    min-width: 180px;
   }
 </style>
