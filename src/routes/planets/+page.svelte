@@ -1,14 +1,14 @@
 <script lang="ts">
-  import type { Planet } from "$lib/swapi-schema/planetSchema";
+  import type { PlanetView } from "$lib/schemas/planetView";
   import { Table, type ColumnConfig } from "$lib/components/table";
   import { getPlanets } from "./data.remote";
 
   const planets = $derived(await getPlanets());
 
-  const columns: ColumnConfig<Planet>[] = [
+  const columns: ColumnConfig<PlanetView>[] = [
     { key: "name", label: "Name", sortable: true },
-    { key: "climate", label: "Climate", sortable: true },
-    { key: "terrain", label: "Terrain", sortable: true },
+    { key: "climate", label: "Climate", render: (val) => (val as string[]).join(", ") },
+    { key: "terrain", label: "Terrain", render: (val) => (val as string[]).join(", ") },
     { key: "gravity", label: "Gravity", sortable: true },
     { key: "surface_water", label: "Surface Water", sortable: true, sortType: "numeric" },
     { key: "rotation_period", label: "Rotation Period", sortable: true, sortType: "numeric" },
