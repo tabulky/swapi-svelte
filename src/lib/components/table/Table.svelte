@@ -1,6 +1,7 @@
 <script lang="ts" generics="T extends Record<string, unknown>">
   import type { Snippet } from "svelte";
   import type { ColumnConfig } from "./types";
+  import { highlight } from "$lib/attachments/highlight";
 
   type Props = {
     data: T[];
@@ -23,6 +24,7 @@
     cell?: Snippet<[{ value: T[keyof T & string]; row: T }]>;
   };
 
+  // TODO: Remove this unnecessary mapping layer!
   function toInternal(configs: ColumnConfig<T>[]): InternalColumn[] {
     return configs.map((c) => ({
       key: c.key,
@@ -178,55 +180,6 @@
     dragContext = null;
   }
 
-  // --- Highlight API ---
-
-  let tbodyEl = $state<HTMLTableSectionElement | null>(null);
-
-  function getTextNodes(node: Node): Text[] {
-    const texts: Text[] = [];
-    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
-    let current: Node | null;
-    while ((current = walker.nextNode())) {
-      texts.push(current as Text);
-    }
-    return texts;
-  }
-
-  $effect(() => {
-    if (!CSS.highlights) return;
-
-    const q = filterText.trim().toLowerCase();
-    if (!q || !tbodyEl) {
-      CSS.highlights.delete("filter-match");
-      return;
-    }
-
-    const ranges: Range[] = [];
-    for (const textNode of getTextNodes(tbodyEl)) {
-      const text = textNode.textContent?.toLowerCase() ?? "";
-      let start = 0;
-      while (start < text.length) {
-        const idx = text.indexOf(q, start);
-        if (idx === -1) break;
-        const range = new Range();
-        range.setStart(textNode, idx);
-        range.setEnd(textNode, idx + q.length);
-        ranges.push(range);
-        start = idx + 1;
-      }
-    }
-
-    if (ranges.length > 0) {
-      CSS.highlights.set("filter-match", new Highlight(...ranges));
-    } else {
-      CSS.highlights.delete("filter-match");
-    }
-
-    return () => {
-      CSS.highlights?.delete("filter-match");
-    };
-  });
-
   // --- Processed rows ---
 
   const processedRows = $derived(sortedData(filteredData(data)));
@@ -287,7 +240,7 @@
       {/each}
     </tr>
   </thead>
-  <tbody bind:this={tbodyEl}>
+  <tbody {@attach highlight(filterText, "filter-match")}>
     {#each processedRows as row (row[rowKey])}
       <tr>
         {#each visibleColumns as col (col.key)}
@@ -309,6 +262,18 @@
     display: flex;
     gap: 0.5rem;
     margin-bottom: 1rem;
+  }
+
+  thead {
+    position: sticky;
+    top: 0;
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+
+  th {
+    text-align: left;
+    border-bottom: 1px solid #555;
+    user-select: none;
   }
 
   .column-settings {
