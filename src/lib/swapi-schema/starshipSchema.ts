@@ -28,5 +28,5 @@ export const starshipSchema = v.object({
 
 /**
  * See https://swapi.info/api/starships/schema for the original JSON schema definition.
-*/
+ */
 export type Starship = v.InferOutput<typeof starshipSchema>;

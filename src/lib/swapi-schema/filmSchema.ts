@@ -24,5 +24,5 @@ export const filmSchema = v.object({
 
 /**
  * See https://swapi.info/api/films/schema for the original JSON schema definition.
-*/
+ */
 export type Film = v.InferOutput<typeof filmSchema>;

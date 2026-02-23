@@ -44,23 +44,23 @@ const processEntity = async (entity: string, url: string) => {
     module: "esm",
   });
 
-  const formattedCode = [
+  const moduleCode = [
     "/**",
     " * This file is auto-generated. Do not edit manually.",
     " * Run `pnpm gen:swapi` to regenerate the schema.",
     " */",
     "",
-    await format(valibotCode, { parser: "typescript" }),
+    valibotCode,
     "/**",
     ` * See ${url}/schema for the original JSON schema definition.`,
-    "*/",
+    " */",
     `export type ${typeName} = v.InferOutput<typeof ${schemaName}>;`,
   ].join("\n");
 
   const absolutePath = new URL(`../src/lib/swapi-schema/${schemaName}.ts`, import.meta.url)
     .pathname;
 
-  await writeFile(absolutePath, formattedCode);
+  await writeFile(absolutePath, await format(moduleCode, { parser: "typescript" }));
 };
 
 async function main() {

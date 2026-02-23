@@ -25,5 +25,5 @@ export const speciesSchema = v.object({
 
 /**
  * See https://swapi.info/api/species/schema for the original JSON schema definition.
-*/
+ */
 export type Species = v.InferOutput<typeof speciesSchema>;

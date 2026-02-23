@@ -24,5 +24,5 @@ export const planetSchema = v.object({
 
 /**
  * See https://swapi.info/api/planets/schema for the original JSON schema definition.
-*/
+ */
 export type Planet = v.InferOutput<typeof planetSchema>;

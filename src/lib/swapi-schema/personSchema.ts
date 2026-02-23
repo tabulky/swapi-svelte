@@ -26,5 +26,5 @@ export const personSchema = v.object({
 
 /**
  * See https://swapi.info/api/people/schema for the original JSON schema definition.
-*/
+ */
 export type Person = v.InferOutput<typeof personSchema>;

@@ -26,5 +26,5 @@ export const vehicleSchema = v.object({
 
 /**
  * See https://swapi.info/api/vehicles/schema for the original JSON schema definition.
-*/
+ */
 export type Vehicle = v.InferOutput<typeof vehicleSchema>;
