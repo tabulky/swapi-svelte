@@ -49,7 +49,7 @@ To recreate this project with the same configuration:
 
 ```sh
 # recreate this project
-pnpm dlx sv create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" playwright tailwindcss="plugins:forms,typography" sveltekit-adapter="adapter:cloudflare+cfTarget:workers" devtools-json --install pnpm cbdata-swapi-explorer
+pnpm dlx sv create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" playwright tailwindcss="plugins:forms,typography" sveltekit-adapter="adapter:cloudflare+cfTarget:workers" devtools-json --install pnpm swapi-svelte
 ```
 
 ## Developing
