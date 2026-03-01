@@ -7,3 +7,5 @@
 <ul>
   <li><a href={resolve("/planets")}>Planets</a></li>
 </ul>
+
+Other resources soon
