@@ -1,6 +1,65 @@
-<script lang="ts" generics="T extends Record<string, unknown>">
+<script lang="ts" module>
   import type { Snippet } from "svelte";
-  import type { ColumnConfig } from "./types";
+
+  export type ColumnType = "text" | "numeric";
+
+  export interface ColumnConfig<
+    TRow extends Record<string, unknown>,
+    TKey extends keyof TRow & string = keyof TRow & string,
+  > {
+    /** Property key on the row object */
+    key: TKey;
+    /** Display label for the column header */
+    label: string;
+    /** Value type for the column */
+    type?: ColumnType;
+    /** Whether the column is visible (default: true) */
+    visible?: boolean;
+    /** Whether the column is sortable (default: false) */
+    sortable?: boolean;
+    /** Cell alignment (default: left) */
+    align?: "left" | "center" | "right";
+    /** Optional Snippet for custom HTML cell rendering */
+    cell?: Snippet<[{ value: TRow[TKey]; row: TRow }]>;
+  }
+
+  const defaultColumnConfigByType: Record<
+    ColumnType,
+    Partial<ColumnConfig<Record<string, unknown>>>
+  > = {
+    text: {
+      sortable: true,
+      align: "left",
+    },
+    numeric: {
+      sortable: true,
+      align: "right",
+    },
+  };
+
+  export function schemaColumn<TRow extends Record<string, unknown>>() {
+    return <TKey extends keyof TRow & string>(
+      key: TKey,
+      config: Omit<ColumnConfig<TRow, TKey>, "key">,
+    ): ColumnConfig<TRow> => {
+      return {
+        // default values
+        visible: true,
+
+        // by type default values
+        ...(config.type ? defaultColumnConfigByType[config.type] : {}),
+
+        // all can be overriden by config
+        ...config,
+
+        // key cannot be overridden
+        key,
+      } as ColumnConfig<TRow>;
+    };
+  }
+</script>
+
+<script lang="ts" generics="T extends Record<string, unknown>">
   import { highlight } from "$lib/attachments/highlight";
 
   type Props = {
@@ -10,42 +69,17 @@
     filterPlaceholder?: string;
   };
 
-  let { data, columns: columnConfig, rowKey, filterPlaceholder = "…" }: Props = $props();
+  let { data, columns = $bindable(), rowKey, filterPlaceholder = "…" }: Props = $props();
 
-  // --- Internal column state (adds runtime `visible` tracking) ---
-
-  type InternalColumn = {
-    key: keyof T & string;
-    label: string;
-    visible: boolean;
-    sortable: boolean;
-    sortType: "text" | "numeric";
-    render?: (value: T[keyof T & string], row: T) => string | number;
-    cell?: Snippet<[{ value: T[keyof T & string]; row: T }]>;
-  };
-
-  // TODO: Remove this unnecessary mapping layer!
-  function toInternal(configs: ColumnConfig<T>[]): InternalColumn[] {
-    return configs.map((c) => ({
-      key: c.key,
-      label: c.label,
-      visible: c.visible !== false,
-      sortable: c.sortable ?? false,
-      sortType: c.sortType ?? "text",
-      render: c.render,
-      cell: c.cell,
-    }));
-  }
-
-  let columns = $state<InternalColumn[]>([]);
-
-  // Initialize and re-sync columns when the config prop changes
-  $effect.pre(() => {
-    columns = toInternal(columnConfig);
+  const columnByKey = $derived.by(() => {
+    const map: Record<string, ColumnConfig<T>> = {};
+    for (const col of columns) {
+      map[col.key] = col;
+    }
+    return map;
   });
 
   const visibleColumns = $derived(columns.filter((c) => c.visible));
-  const visibleCount = $derived(visibleColumns.length);
 
   // --- Column settings panel ---
 
@@ -70,16 +104,15 @@
     return sortDirection === "asc" ? " ▲" : " ▼";
   }
 
-  function sortedData(rows: T[]): T[] {
+  function sortData(rows: T[]): T[] {
     if (!sortKey) return rows;
-    const key = sortKey;
     const dir = sortDirection === "asc" ? 1 : -1;
-    const col = columns.find((c) => c.key === key);
-    const isNumeric = col?.sortType === "numeric";
+    const col = columnByKey[sortKey!];
+    const isNumeric = col?.type === "numeric";
 
-    return [...rows].sort((a, b) => {
-      const aVal = cellValue(a, key);
-      const bVal = cellValue(b, key);
+    return rows.toSorted((a, b) => {
+      const aVal = a[sortKey!];
+      const bVal = b[sortKey!];
 
       if (isNumeric) {
         const aStr = String(aVal).replace(/,/g, "");
@@ -102,25 +135,15 @@
 
   let filterText = $state("");
 
-  function filteredData(rows: T[]): T[] {
+  function filterData(rows: T[]): T[] {
     const q = filterText.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter((row) =>
       visibleColumns.some((col) => {
-        const val = String(cellValue(row, col.key)).toLowerCase();
+        const val = String(row[col.key]).toLowerCase();
         return val.includes(q);
       }),
     );
-  }
-
-  // --- Cell value rendering ---
-
-  function cellValue(row: T, key: keyof T & string): string | number {
-    const col = columns.find((c) => c.key === key);
-    if (col?.render) {
-      return col.render(row[key] as T[keyof T & string], row);
-    }
-    return String(row[key]);
   }
 
   // --- Drag & drop reordering ---
@@ -182,7 +205,7 @@
 
   // --- Processed rows ---
 
-  const processedRows = $derived(sortedData(filteredData(data)));
+  const processedRows = $derived(sortData(filterData(data)));
 </script>
 
 <div class="table-toolbar">
@@ -226,29 +249,46 @@
     <tr>
       {#each visibleColumns as col, i (col.key)}
         <th
-          class:sortable={col.sortable}
+          class={[
+            "px-1",
+            {
+              "text-left": col.align === "left",
+              "text-right": col.align === "right",
+              "text-center": col.align === "center",
+              "drag-over": dragOverIndex === i && dragContext === "header",
+              sortable: col.sortable,
+            },
+          ]}
+          onclick={() => col.sortable && toggleSort(col.key)}
           draggable="true"
           ondragstart={() => onDragStart(i, "header")}
           ondragover={(e) => onDragOver(e, i)}
           ondrop={(e) => onDropHeader(e, i)}
           ondragend={onDragEnd}
-          class:drag-over={dragOverIndex === i && dragContext === "header"}
-          onclick={() => col.sortable && toggleSort(col.key)}
         >
           {col.label}{sortIndicator(col.key)}
         </th>
       {/each}
     </tr>
   </thead>
-  <tbody {@attach highlight(filterText, "filter-match")}>
+  <tbody {@attach highlight(filterText, "search-match")}>
     {#each processedRows as row (row[rowKey])}
       <tr>
         {#each visibleColumns as col (col.key)}
-          <td>
+          <td
+            class={[
+              "px-1",
+              {
+                "text-left": col.align === "left",
+                "text-right": col.align === "right",
+                "text-center": col.align === "center",
+              },
+            ]}
+          >
             {#if col.cell}
-              {@render col.cell({ value: row[col.key] as T[keyof T & string], row })}
+              {@render col.cell({ value: row[col.key], row })}
             {:else}
-              {cellValue(row, col.key)}
+              {row[col.key]}
             {/if}
           </td>
         {/each}
@@ -356,7 +396,7 @@
     min-width: 180px;
   }
 
-  ::highlight(filter-match) {
+  ::highlight(search-match) {
     background-color: #fbbf24;
     color: #000;
   }

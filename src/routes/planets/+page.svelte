@@ -1,70 +1,58 @@
 <script lang="ts">
   import type { PlanetView } from "$lib/schemas/planetView";
-  import { Table, type ColumnConfig } from "$lib/components/table";
-  import { Tag } from "$lib/components/tag";
+  import Table, { schemaColumn } from "$lib/components/table/Table.svelte";
+  import Tag from "$lib/components/Tag.svelte";
   import { getPlanets } from "./data.remote";
+  import Button from "$lib/components/Button.svelte";
 
   const planets = $derived(await getPlanets());
 
-  const columns: ColumnConfig<PlanetView>[] = [
-    { key: "name", label: "Name", sortable: true },
-    { key: "climate", label: "Climate", cell: tagCell },
-    { key: "terrain", label: "Terrain", cell: tagCell },
-    { key: "gravity", label: "Gravity", sortable: true },
-    { key: "surface_water", label: "Surface Water", sortable: true, sortType: "numeric" },
-    { key: "rotation_period", label: "Rotation Period", sortable: true, sortType: "numeric" },
-    { key: "orbital_period", label: "Orbital Period", sortable: true, sortType: "numeric" },
-    { key: "diameter", label: "Diameter", sortable: true, sortType: "numeric" },
-    { key: "population", label: "Population", sortable: true, sortType: "numeric" },
-    {
-      key: "residents",
-      label: "Residents",
-      render: (val) => (val as string[]).length,
-    },
-    {
-      key: "films",
-      label: "Films",
-      render: (val) => (val as string[]).length,
-    },
-  ];
+  const col = schemaColumn<PlanetView>();
+  const columns = $state([
+    col("name", { label: "Name", sortable: true }),
+    col("climate", { label: "Climate", cell: tagCell }),
+    col("terrain", { label: "Terrain", cell: tagCell }),
+    col("gravity", { label: "Gravity", sortable: true }),
+    col("surface_water", { label: "Surface Water", type: "numeric" }),
+    col("rotation_period", { label: "Rotation Period", type: "numeric" }),
+    col("orbital_period", { label: "Orbital Period", type: "numeric" }),
+    col("diameter", { label: "Diameter", type: "numeric" }),
+    col("population", { label: "Population", type: "numeric" }),
+    col("residents", { label: "Residents", cell: refsCell, align: "center" }),
+    col("films", { label: "Films", cell: refsCell, align: "center" }),
+  ]);
 </script>
 
-<h1>Planets</h1>
-
-<div class="toolbar">
-  <button onclick={() => getPlanets().refresh()}>Refresh</button>
-</div>
-
-{#snippet tagCell({ value }: { value: unknown })}
-  <div class="tag-list">
-    {#each value as string[] as tag}
-      <Tag>{tag}</Tag>
-    {/each}
-  </div>
+{#snippet tagCell({ value }: { value: string[] })}
+  {#each value as tag (tag)}
+    <Tag>{tag}</Tag>
+  {/each}
 {/snippet}
 
-<svelte:boundary>
-  <Table data={planets} {columns} rowKey="url" filterPlaceholder="Filter planets…" />
+{#snippet refsCell({ value }: { value: string[] })}
+  {#if !value.length}–{:else}{value.length}{/if}
+{/snippet}
 
-  {#snippet pending()}
-    <p>Loading planets...</p>
-  {/snippet}
+<main class="m-2">
+  <h1 class="my-4 text-2xl font-bold">Planets</h1>
 
-  {#snippet failed(error)}
-    <p>Error loading planets: {error instanceof Error ? error.message : error}</p>
-  {/snippet}
-</svelte:boundary>
+  <div class="flex items-center gap-4">
+    <Button onclick={() => getPlanets().refresh()}>⟳</Button>
 
-<style>
-  .toolbar {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
+    {#if $effect.pending()}
+      <div>Loading planets...</div>
+    {/if}
+  </div>
 
-  .tag-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3rem;
-  }
-</style>
+  <svelte:boundary>
+    <Table data={planets} {columns} rowKey="url" filterPlaceholder="Filter planets…" />
+
+    {#snippet pending()}
+      <p>Loading planets...</p>
+    {/snippet}
+
+    {#snippet failed(error)}
+      <p>Error loading planets: {error instanceof Error ? error.message : error}</p>
+    {/snippet}
+  </svelte:boundary>
+</main>
