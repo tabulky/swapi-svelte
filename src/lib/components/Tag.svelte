@@ -14,8 +14,8 @@
   .tag {
     display: inline-block;
     padding: 0 0.5rem;
-    /* margin: 0; */
-    border-radius: 1rex 1rex;
+    margin: 0 0.125rem;
+    border-radius: 4px;
     border: 1px solid rgba(0, 0, 0, 0.2);
     white-space: nowrap;
   }
